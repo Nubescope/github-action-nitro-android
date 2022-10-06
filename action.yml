@@ -1,0 +1,273 @@
+name: "Nitro build tool for Android"
+description: "A Gihub Action for building React Native apps with Nitro"
+branding:
+  icon: "zap"
+  color: "gray-dark"
+inputs:
+  # Basic configuration
+  root-directory:
+    description: The directory within your project, in which your code is located. Leave this field empty if your code is not located in a subdirectory"
+    default: "."
+  flavor:
+    description: "The product flavor for Gradle build variant"
+
+  # App Versioning
+  version-name:
+    description: "The version name for the app"
+  version-code:
+    description: "The version code for the app"
+  disable-version-name-from-package-json:
+    description: "Disable automatic version name configuration. By default will get the 'version' field from package.json and set the version name. Available Options: (`yes` / `no`)"
+  disable-version-code-auto-generation:
+    description: "Disable automatic version code generation. By default will generate a timestamp based number and set the version code. Available Options: (`yes` / `no`)"
+
+  # App Signing
+  keystore-url:
+    description: "Keystore url"
+  keystore-password:
+    description: "Keystore password"
+  keystore-key-alias:
+    description: "Keystore alias"
+  keystore-key-password:
+    description: "Keystore key password"
+
+  # Caching
+  cache-provider:
+    description: "Cache provider where cache artifacts will be persisted. Available Options: (`fs`: File system / `github`: Uses Github cache action / `s3`: Amazon - Simple Storage Service)"
+    default: "s3"
+  disable-cache:
+    description: "When setting this option to `yes` build cache optimizations won't be performed.  Available Options: (`yes` / `no`)"
+  cache-env-var-lookup-keys:
+    description: "List of env var keys for lookup to determine cache fingerprint. A list of `\\|` separated values with env variable keys to lookup to determine whether the build should be cached or not"
+  cache-file-lookup-paths:
+    description: "List of files for lookup to determine cache fingerprint. A list of `\\|` separated value paths (relative to the root of the repo or absolute) to lookup in order to determine whether the build should be cached or not"
+  disable-metro-cache:
+    description: "Setting this field to yes will disable the React Native Metro cache feature"
+
+  # Hooks
+  pre-install-command:
+    description: "Run command prior to install project dependencies (e.g. `rm -rf ./some-folder`)"
+
+  pre-build-command:
+    description: "Run command prior to start building the app (e.g. `yarn tsc && yarn test`)"
+
+  post-build-command:
+    description: "Run command once build successfully finished (e.g. `yarn publish`)"
+
+  # Advanced
+  output-directory:
+    description: "The path to the directory where to place all of Nitro's output files"
+  entry-file:
+    description: "The entry file for bundle generation"
+  debug:
+    description: "Enable verbose logs. Available Options: (`yes` / `no`)"
+  fail-safe:
+    description: "Runing the app in this mode allows you to prevent the build to fail but you can check the status in further steps"
+outputs:
+  nitro-build-status:
+    description: "The status of the latest build (success / failure)"
+    value: ${{ steps.nitro-cli.outputs.nitro-build-status }}
+  nitro-output-dir:
+    description: "The path to the directory where to place all of Nitro's output files"
+    value: ${{ steps.nitro-cli.outputs.nitro-output-dir }}
+  nitro-logs-path:
+    description: "The full path to access the build log"
+    value: ${{ steps.nitro-cli.outputs.nitro-logs-path }}
+  nitro-deploy-path:
+    description: "The full path to access the build artifacts"
+    value: ${{ steps.nitro-cli.outputs.nitro-deploy-path }}
+  nitro-summary-path:
+    description: "The full path to access the build summary report"
+    value: ${{ steps.nitro-cli.outputs.nitro-summary-path }}
+runs:
+  using: "composite"
+  steps:
+    - name: Setup Android environment
+      uses: android-actions/setup-android@v2
+    - name: Install Envman
+      run: |
+        curl -fL https://github.com/bitrise-io/envman/releases/download/2.3.3/envman-"$(uname -s)"-"$(uname -m)" > /usr/local/bin/envman
+        chmod +x /usr/local/bin/envman
+      shell: bash
+    - name: Run Nitro cli
+      id: nitro-cli
+      shell: bash
+      run: |
+        set -e
+
+        if [[ "${{ inputs.fail-safe }}" == "true" || "${{ inputs.fail-safe }}" == "yes" ]]; then
+          set +e
+        fi
+
+        # shellcheck disable=SC2154
+        if [[ "${{ inputs.debug }}" == "true" || "${{ inputs.debug }}" == "yes" ]]; then
+          set -x
+        fi
+
+        if [[ -n "${{ inputs.entry-file }}" ]]; then
+          export ENTRY_FILE="${{ inputs.entry-file }}"
+        fi
+
+        # Obtain vm boot time
+        ps_command=$([[ "$(uname)" == "Darwin" ]] && echo "ps -eo lstart,command" || echo "ps -eo lstart,cmd")
+        date_command=$([[ "$(uname)" == "Darwin" ]] && echo "gdate" || echo "date")
+
+        bitrise_process_started_at=$(${ps_command} | grep "Runner.Listener run" | grep -v grep | sed -e 's/^\(.\{24\}\).*/\1/' | head -1)
+        bitrise_process_started_at_ms=$(${date_command} -d "${bitrise_process_started_at:=$(date)}" "+%s%3N")
+
+        # Set environment variables
+        export NITRO_BOOTED_AT_TIMESTAMP="${bitrise_process_started_at_ms}"
+
+        # Build command arguments
+        args=("android")
+        args+=("--tracking-provider" "nitro-on-premise")
+
+        # shellcheck disable=SC2154
+        if [[ "${{ inputs.debug }}" == "true" || "${{ inputs.debug }}" == "yes" ]]; then
+          args+=("--verbose")
+        fi
+
+        args+=("--build-id" "${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}_${GITHUB_RUN_ATTEMPT}")
+        args+=("--repo-path" "${GITHUB_WORKSPACE}")
+
+        # -------------------
+        # Basic configuration
+        # -------------------
+
+        if [[ -n "${{ inputs.root-directory }}" ]]; then
+          args+=("--root-directory" "${{ inputs.root-directory }}")
+        fi
+
+        if [[ -n "${{ inputs.flavor }}" ]]; then
+          args+=("--flavor" "${{ inputs.flavor }}")
+        fi
+
+        # --------------
+        # App Versioning
+        # --------------
+
+        if [[ -n "${{ inputs.version-name }}" ]]; then
+          args+=("--version-name" "${{ inputs.version-name }}")
+        fi
+
+        if [[ -n "${{ inputs.version-code }}" ]]; then
+          args+=("--version-code" "${{ inputs.version-code }}")
+        fi
+
+        # shellcheck disable=SC2154
+        if [[ "${{ inputs.disable-version-name-from-package-json }}" == "true" || "${{ inputs.disable-version-name-from-package-json }}" == "yes" ]]; then
+          args+=("--disable-version-name-from-package-json")
+        fi
+
+        # shellcheck disable=SC2154
+        if [[ "${{ inputs.disable-version-code-auto-generation }}" == "true" || "${{ inputs.disable-version-code-auto-generation }}" == "yes" ]]; then
+          args+=("--disable-version-code-auto-generation")
+        fi
+
+        # -----------
+        # App Signing
+        # -----------
+
+        if [[ -n "${{ inputs.keystore-url }}" ]]; then
+          args+=("--keystore-url" "${{ inputs.keystore-url }}")
+        fi
+
+        if [[ -n "${{ inputs.keystore-password }}" ]]; then
+          args+=("--keystore-password" "${{ inputs.keystore-password }}")
+        fi
+
+        if [[ -n "${{ inputs.keystore-key-alias }}" ]]; then
+          args+=("--keystore-key-alias" "${{ inputs.keystore-key-alias }}")
+        fi
+
+        if [[ -n "${{ inputs.keystore-key-password }}" ]]; then
+          args+=("--keystore-key-password" "${{ inputs.keystore-key-password }}")
+        fi
+
+        # -------
+        # Caching
+        # -------
+
+        if [[ -n "${{ inputs.cache-provider }}" ]]; then
+          args+=("--cache-provider" "${{ inputs.cache-provider }}")
+        fi
+
+        # shellcheck disable=SC2154
+        if [[ "${{ inputs.disable-cache }}" == "true" || "${{ inputs.disable-cache }}" == "yes" ]]; then
+          args+=("--disable-cache")
+        fi
+
+        if [[ -n "${{ inputs.cache-env-var-lookup-keys }}" ]]; then
+          IFS='|' cache_env_var_lookup_keys_value=("${{ inputs.cache-env-var-lookup-keys }}")
+          # shellcheck disable=SC2206
+          args+=("--cache-env-var-lookup-keys" ${cache_env_var_lookup_keys_value[@]})
+        fi
+
+        if [[ -n "${{ inputs.cache-file-lookup-paths }}" ]]; then
+          IFS='|' cache_file_lookup_paths_value=("${{ inputs.cache-file-lookup-paths }}")
+          # shellcheck disable=SC2206
+          args+=("--cache-file-lookup-paths" ${cache_file_lookup_paths_value[@]})
+        fi
+
+        # shellcheck disable=SC2154
+        if [[ "${{ inputs.disable-metro-cache }}" == "true" || "${{ inputs.disable-metro-cache }}" == "yes" ]]; then
+          args+=("--disable-metro-cache")
+        fi
+
+        # -----
+        # Hooks
+        # -----
+
+        if [[ -n "${{ inputs.pre-install-command }}" ]]; then
+          args+=("--pre-install-command" "${{ inputs.pre-install-command }}")
+        fi
+
+        if [[ -n "${{ inputs.pre-build-command }}" ]]; then
+          args+=("--pre-build-command" "${{ inputs.pre-build-command }}")
+        fi
+
+        if [[ -n "${{ inputs.post-build-command }}" ]]; then
+          args+=("--post-build-command" "${{ inputs.post-build-command }}")
+        fi
+
+        # --------
+        # Advanced
+        # --------
+
+        if [[ -n "${{ inputs.output-directory }}" ]]; then
+          args+=("--output-directory" "${{ inputs.output-directory }}")
+        fi
+
+        # -------------------
+        # Nitro Cli execution
+        # -------------------
+
+        BITRISE_STEP_VERSION=4.0.1
+
+        MACOS_BIN_FILE="nitro-macos"
+        LINUX_BIN_FILE="nitro-linux"
+
+        BIN_FILE=$([[ "$(uname)" == "Darwin" ]] && echo "${MACOS_BIN_FILE}" || echo "${LINUX_BIN_FILE}")
+        BIN_FILE_PATH="${RUNNER_TEMP}/nitro"
+
+        # Download cli release
+        wget -q "https://github.com/nitro-build/bitrise-step-nitro-android/releases/download/${BITRISE_STEP_VERSION}/${BIN_FILE}" -O "${BIN_FILE_PATH}"
+        chmod +x "${BIN_FILE_PATH}"
+
+        ${BIN_FILE_PATH} "${args[@]}"
+
+        exit_code=$?
+
+        echo "nitro-output-dir=$(envman run bash -c 'echo ${NITRO_OUTPUT_DIR}')" >> $GITHUB_OUTPUT
+        echo "nitro-logs-path=$(envman run bash -c 'echo ${NITRO_LOGS_PATH}')" >> $GITHUB_OUTPUT
+        echo "nitro-deploy-path=$(envman run bash -c 'echo ${NITRO_DEPLOY_PATH}')" >> $GITHUB_OUTPUT
+        echo "nitro-summary-path=$(envman run bash -c 'echo ${NITRO_SUMMARY_PATH}')" >> $GITHUB_OUTPUT
+
+        if [[ exit_code -ne 0 ]]; then
+          echo "⚠️ Nitro has thrown a '${exit_code}' error code while running on fail-safe mode. You can check 'NITRO_BUILD_FAILED' value in further steps."
+          echo "nitro-build-failed=true" >> $GITHUB_OUTPUT
+          echo "nitro-build-status=failed" >> $GITHUB_OUTPUT
+        else
+          echo "nitro-build-failed=false" >> $GITHUB_OUTPUT
+          echo "nitro-build-status=success" >> $GITHUB_OUTPUT
+        fi
