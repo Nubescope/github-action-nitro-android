@@ -6,7 +6,7 @@ inputs:
     default: "./"
   cache-provider:
     description: "Cache provider where cache artifacts will be persisted"
-    default: "s3"
+    default: "github"
   fail-safe:
     description: "Runing the app in this mode allows you to prevent the build to fail but you can check the status in further steps"
     default: "false"
@@ -19,9 +19,18 @@ outputs:
   nitro-build-status:
     description: "The status of the latest build (success / failure)"
     value: ${{ steps.nitro-cli.outputs.nitro-build-status }}
-  nitro-build-failed:
-    description: "The status of the latest build (success / failure)"
-    value: ${{ steps.nitro-cli.outputs.nitro-build-status }}
+  nitro-output-dir:
+    description: "The path to the directory where to place all of Nitro's output files"
+    value: ${{ steps.nitro-cli.outputs.nitro-output-dir }}
+  nitro-logs-path:
+    description: "The full path to access the build log"
+    value: ${{ steps.nitro-cli.outputs.nitro-logs-path }}
+  nitro-deploy-path:
+    description: "The full path to access the build artifacts"
+    value: ${{ steps.nitro-cli.outputs.nitro-deploy-path }}
+  nitro-summary-path:
+    description: "The full path to access the build summary report"
+    value: ${{ steps.nitro-cli.outputs.nitro-summary-path }}
 runs:
   using: "composite"
   steps:
@@ -210,9 +219,14 @@ runs:
 
         if [[ exit_code -ne 0 ]]; then
           echo "⚠️ Nitro has thrown a '${exit_code}' error code while running on fail-safe mode. You can check 'NITRO_BUILD_FAILED' value in further steps."
-          envman add --key "NITRO_BUILD_FAILED" --value "true"
-          envman add --key "NITRO_BUILD_STATUS" --value "failed"
+          echo "::set-output name=nitro-build-failed::true"
+          echo "::set-output name=nitro-build-status::failed"
         else
-          envman add --key "NITRO_BUILD_FAILED" --value "false"
-          envman add --key "NITRO_BUILD_STATUS" --value "success"
+          echo "::set-output name=nitro-build-failed::true"
+          echo "::set-output name=nitro-build-status::failed"
         fi
+
+        echo "::set-output name=nitro-output-dir::${NITRO_OUTPUT_DIR}"
+        echo "::set-output name=nitro-logs-path::${NITRO_LOGS_PATH}"
+        echo "::set-output name=nitro-deploy-path::${NITRO_DEPLOY_PATH}"
+        echo "::set-output name=nitro-summary-path::${NITRO_SUMMARY_PATH}"
