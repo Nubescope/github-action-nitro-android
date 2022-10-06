@@ -1,5 +1,5 @@
-name: "Nitro builder for Android"
-description: "Greet someone and record the time"
+name: "Nitro build tool for Android"
+description: "A Gihub Action for building React Native apps with Nitro"
 inputs:
   root-directory:
     description: "The directory within your project, in which your code is located. Leave this field empty if your code is not located in a subdirectory"
