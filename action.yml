@@ -68,6 +68,11 @@ runs:
         args=("android")
         args+=("--tracking-provider" "nitro-on-premise")
 
+        # shellcheck disable=SC2154
+        if [[ "${{ inputs.debug }}" == "true" || "${{ inputs.debug }}" == "yes" ]]; then
+          args+=("--verbose")
+        fi
+
         args+=("--build-id" "${GITHUB_RUN_ID}")
         args+=("--repo-path" "${GITHUB_WORKSPACE}")
 
