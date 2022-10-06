@@ -12,6 +12,9 @@ inputs:
     default: "false"
   entry-file:
     description: "entry file"
+  debug:
+    description: "Enable verbose logs"
+    default: "no"
 outputs:
   nitro-build-status:
     description: "The status of the latest build (success / failure)"
