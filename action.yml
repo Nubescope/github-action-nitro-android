@@ -1,0 +1,206 @@
+name: "Nitro builder for Android"
+description: "Greet someone and record the time"
+inputs:
+  root-directory:
+    description: "The directory within your project, in which your code is located. Leave this field empty if your code is not located in a subdirectory"
+    default: "./"
+  cache-provider:
+    description: "Cache provider where cache artifacts will be persisted"
+    default: "s3"
+  fail-safe:
+    description: "Runing the app in this mode allows you to prevent the build to fail but you can check the status in further steps"
+    default: "false"
+  entry-file:
+    description: "entry file"
+outputs:
+  nitro-build-status:
+    description: "The status of the latest build (success / failure)"
+    value: ${{ steps.nitro-cli.outputs.nitro-build-status }}
+  nitro-build-failed:
+    description: "The status of the latest build (success / failure)"
+    value: ${{ steps.nitro-cli.outputs.nitro-build-status }}
+runs:
+  using: "composite"
+  steps:
+    - uses: android-actions/setup-android@v2
+    - name: Setup Nitro cache
+      if: ${{ inputs.cache-provider == 'github' }}
+      uses: actions/cache@v2
+      with:
+        path: |
+          ~/.nitro/cache/*
+        key: nitro-cache-${{ hashFiles('~/.nitro/cache/*') }}
+        restore-keys: nitro-cache-
+    - name: Install envman
+      run: |
+        curl -fL https://github.com/bitrise-io/envman/releases/download/2.3.3/envman-"$(uname -s)"-"$(uname -m)" > /usr/local/bin/envman
+        chmod +x /usr/local/bin/envman
+      shell: bash
+    - name: Nitro build
+      id: nitro-cli
+      shell: bash
+      run: |
+        set -e
+
+        if [[ "${{ inputs.fail-safe }}" == "true" || "${{ inputs.fail-safe }}" == "yes" ]]; then
+          set +e
+        fi
+
+        # shellcheck disable=SC2154
+        if [[ "${{ inputs.debug }}" == "true" || "${{ inputs.debug }}" == "yes" ]]; then
+          set -x
+        fi
+
+        if [[ -n "${{ inputs.entry-file }}" ]]; then
+          export ENTRY_FILE="${{ inputs.entry-file }}"
+        fi
+
+        # Obtain vm boot time
+
+        ##########################
+        # TODO: Obtain boot time
+        ##########################
+
+        # Build command arguments
+        args=("android")
+        args+=("--tracking-provider" "nitro-on-premise")
+
+        args+=("--build-id" "${GITHUB_RUN_ID}")
+        args+=("--repo-path" "${GITHUB_WORKSPACE}")
+
+        # -------------------
+        # Basic configuration
+        # -------------------
+
+        if [[ -n "${{ inputs.root-directory }}" ]]; then
+          args+=("--root-directory" "${{ inputs.root-directory }}")
+        fi
+
+        if [[ -n "${{ inputs.android-flavor }}" ]]; then
+          args+=("--android-flavor" "${{ inputs.android-flavor }}")
+        fi
+
+        # --------------
+        # App Versioning
+        # --------------
+
+        if [[ -n "${{ inputs.version-name }}" ]]; then
+          args+=("--version-name" "${{ inputs.version-name }}")
+        fi
+
+        if [[ -n "${{ inputs.version-code }}" ]]; then
+          args+=("--version-code" "${{ inputs.version-code }}")
+        fi
+
+        # shellcheck disable=SC2154
+        if [[ "${{ inputs.disable-version-name-from-package-json }}" == "true" || "${{ inputs.disable-version-name-from-package-json }}" == "yes" ]]; then
+          args+=("--disable-version-name-from-package-json")
+        fi
+
+        # shellcheck disable=SC2154
+        if [[ "${{ inputs.disable-version-code-auto-generation }}" == "true" || "${{ inputs.disable-version-code-auto-generation }}" == "yes" ]]; then
+          args+=("--disable-version-code-auto-generation")
+        fi
+
+        # -----------
+        # App Signing
+        # -----------
+
+        if [[ -n "${{ inputs.android-keystore-url }}" ]]; then
+          args+=("--android-keystore-url" "${{ inputs.android-keystore-url }}")
+        fi
+
+        if [[ -n "${{ inputs.android-keystore-password }}" ]]; then
+          args+=("--android-keystore-password" "${{ inputs.android-keystore-password }}")
+        fi
+
+        if [[ -n "${{ inputs.android-keystore-key-alias }}" ]]; then
+          args+=("--android-keystore-key-alias" "${{ inputs.android-keystore-key-alias }}")
+        fi
+
+        if [[ -n "${{ inputs.android-keystore-key-password }}" ]]; then
+          args+=("--android-keystore-key-password" "${{ inputs.android-keystore-key-password }}")
+        fi
+
+        # -------
+        # Caching
+        # -------
+
+        if [[ -n "${{ inputs.cache-provider }}" ]]; then
+          args+=("--cache-provider" "${{ inputs.cache-provider }}")
+        fi
+
+        # shellcheck disable=SC2154
+        if [[ "${{ inputs.disable-cache }}" == "true" || "${{ inputs.disable-cache }}" == "yes" ]]; then
+          args+=("--disable-cache")
+        fi
+
+        ##########################
+        # TODO: Review this
+        ##########################
+
+        # if [[ -n "${{ inputs.cache-env-var-lookup-keys }}" ]]; then
+        #   IFS='|' cache-env-var-lookup-keys-value=("${{ inputs.cache-env-var-lookup-keys }}")
+        #   # shellcheck disable=SC2206
+        #   args+=("--cache-env-var-lookup-keys" ${inputs.cache-env-var-lookup-keys-value[@]})
+        # fi
+
+        # if [[ -n "${{ inputs.cache-file-lookup-paths }}" ]]; then
+        #   IFS='|' cache-file-lookup-paths-value=("${{ inputs.cache-file-lookup-paths }}")
+        #   # shellcheck disable=SC2206
+        #   args+=("--cache-file-lookup-paths" ${inputs.cache-file-lookup-paths-value[@]})
+        # fi
+
+        # shellcheck disable=SC2154
+        if [[ "${{ inputs.disable-metro-cache }}" == "true" || "${{ inputs.disable-metro-cache }}" == "yes" ]]; then
+          args+=("--disable-metro-cache")
+        fi
+
+        # -----
+        # Hooks
+        # -----
+
+        if [[ -n "${{ inputs.pre-install-command }}" ]]; then
+          args+=("--pre-install-command" "${{ inputs.pre-install-command }}")
+        fi
+
+        if [[ -n "${{ inputs.pre-build-command }}" ]]; then
+          args+=("--pre-build-command" "${{ inputs.pre-build-command }}")
+        fi
+
+        if [[ -n "${{ inputs.post-build-command }}" ]]; then
+          args+=("--post-build-command" "${{ inputs.post-build-command }}")
+        fi
+
+        # -----
+        # Advanced
+        # -----
+
+        if [[ -n "${{ inputs.output-directory }}" ]]; then
+          args+=("--output-directory" "${{ inputs.output-directory }}")
+        fi
+
+        # -------------------
+        # Nitro Cli execution
+        # -------------------
+
+        BITRISE_STEP_VERSION=1.0.0
+        BIN_FILE="nitro-linux"
+        BIN_FILE_PATH="${RUNNER_TEMP}/nitro"
+
+        # Download cli release
+        wget -q "https://github.com/nitro-build/bitrise-step-nitro-android/releases/download/${BITRISE_STEP_VERSION}/${BIN_FILE}" -O "${BIN_FILE_PATH}"
+        chmod +x "${BIN_FILE_PATH}"
+
+        ${BIN_FILE_PATH} "${args[@]}"
+
+        exit_code=$?
+
+        if [[ exit_code -ne 0 ]]; then
+          echo "⚠️ Nitro has thrown a '${exit_code}' error code while running on fail-safe mode. You can check 'NITRO_BUILD_FAILED' value in further steps."
+          envman add --key "NITRO_BUILD_FAILED" --value "true"
+          envman add --key "NITRO_BUILD_STATUS" --value "failed"
+        else
+          envman add --key "NITRO_BUILD_FAILED" --value "false"
+          envman add --key "NITRO_BUILD_STATUS" --value "success"
+        fi
