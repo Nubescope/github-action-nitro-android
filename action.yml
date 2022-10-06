@@ -135,7 +135,11 @@ runs:
         # -------
 
         if [[ -n "${{ inputs.cache-provider }}" ]]; then
-          args+=("--cache-provider" "${{ inputs.cache-provider }}")
+          if [[ "${{ inputs.cache-provider }}" == "github" ]]; then
+            args+=("--cache-provider" "fs")
+          else
+            args+=("--cache-provider" "${{ inputs.cache-provider }}")
+          fi
         fi
 
         # shellcheck disable=SC2154
