@@ -1,1 +1,1 @@
-# nitro-github-action-android
+# github-action-nitro-android
