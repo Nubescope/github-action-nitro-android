@@ -17,19 +17,9 @@ inputs:
   version-code:
     description: "The version code for the app"
   disable-version-name-from-package-json:
-    description: >
-      Disable automatic version name configuration. By default will get the 'version' field from package.json and set the version name.
-
-      Available Options:
-        - `yes`
-        - `no`
+    description: "Disable automatic version name configuration. By default will get the 'version' field from package.json and set the version name. Available Options: (`yes` / `no`)"
   disable-version-code-auto-generation:
-    description: >
-      Disable automatic version code generation. By default will generate a timestamp based number and set the version code.
-
-      Available Options:
-        - `yes`
-        - `no`
+    description: "Disable automatic version code generation. By default will generate a timestamp based number and set the version code. Available Options: (`yes` / `no`)"
 
   # App Signing
   keystore-url:
@@ -43,31 +33,14 @@ inputs:
 
   # Caching
   cache-provider:
-    description: >
-      Cache provider where cache artifacts will be persisted.
-
-      Available Options:
-        - `fs`: File system
-        - `github`: Uses Github cache action
-        - `s3`: Amazon - Simple Storage Service
+    description: "Cache provider where cache artifacts will be persisted. Available Options: (`fs`: File system / `github`: Uses Github cache action / `s3`: Amazon - Simple Storage Service)"
     default: "github"
   disable-cache:
-    description: >
-      When setting this option to `yes` build cache optimizations won't be performed.
-
-      Available Options:
-        - `yes`
-        - `no`
+    description: "When setting this option to `yes` build cache optimizations won't be performed.  Available Options: (`yes` / `no`)"
   cache-env-var-lookup-keys:
-    description: >
-      List of env var keys for lookup to determine cache fingerprint.
-
-      A list of `|` separated values with env variable keys to lookup to determine whether the build should be cached or not
+    description: "List of env var keys for lookup to determine cache fingerprint. A list of `\\|` separated values with env variable keys to lookup to determine whether the build should be cached or not"
   cache-file-lookup-paths:
-    description: >
-      List of files for lookup to determine cache fingerprint.
-
-      A list of `|` separated value paths (relative to the root of the repo or absolute) to lookup in order to determine whether the build should be cached or not
+    description: "List of files for lookup to determine cache fingerprint. A list of `\\|` separated value paths (relative to the root of the repo or absolute) to lookup in order to determine whether the build should be cached or not"
   disable-metro-cache:
     description: "Setting this field to yes will disable the React Native Metro cache feature"
 
@@ -87,12 +60,7 @@ inputs:
   entry-file:
     description: "The entry file for bundle generation"
   debug:
-    description: >
-      Enable verbose logs.
-
-      Available Options:
-        - `yes`
-        - `no`
+    description: "Enable verbose logs. Available Options: (`yes` / `no`)"
   fail-safe:
     description: "Runing the app in this mode allows you to prevent the build to fail but you can check the status in further steps"
 outputs:
