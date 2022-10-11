@@ -115,21 +115,18 @@ runs:
   using: "composite"
   steps:
     - uses: android-actions/setup-android@v2
-    - name: Setup Nitro cache
+    - uses: actions/cache@v2
       if: ${{ inputs.cache-provider == 'github' }}
-      uses: actions/cache@v2
       with:
         path: |
           ~/.nitro/cache/*
         key: nitro-cache-${{ hashFiles('~/.nitro/cache/*') }}
         restore-keys: nitro-cache-
-    - name: Install envman
-      run: |
+    - run: |
         curl -fL https://github.com/bitrise-io/envman/releases/download/2.3.3/envman-"$(uname -s)"-"$(uname -m)" > /usr/local/bin/envman
         chmod +x /usr/local/bin/envman
       shell: bash
-    - name: Nitro build
-      id: nitro-cli
+    - id: nitro-cli
       shell: bash
       run: |
         set -e
@@ -236,21 +233,17 @@ runs:
           args+=("--disable-cache")
         fi
 
-        ##########################
-        # TODO: Review this
-        ##########################
+        if [[ -n "${{ inputs.cache-env-var-lookup-keys }}" ]]; then
+          IFS='|' cache_env_var_lookup_keys_value=("${{ inputs.cache-env-var-lookup-keys }}")
+          # shellcheck disable=SC2206
+          args+=("--cache-env-var-lookup-keys" ${cache_env_var_lookup_keys_value[@]})
+        fi
 
-        # if [[ -n "${{ inputs.cache-env-var-lookup-keys }}" ]]; then
-        #   IFS='|' cache-env-var-lookup-keys-value=("${{ inputs.cache-env-var-lookup-keys }}")
-        #   # shellcheck disable=SC2206
-        #   args+=("--cache-env-var-lookup-keys" ${inputs.cache-env-var-lookup-keys-value[@]})
-        # fi
-
-        # if [[ -n "${{ inputs.cache-file-lookup-paths }}" ]]; then
-        #   IFS='|' cache-file-lookup-paths-value=("${{ inputs.cache-file-lookup-paths }}")
-        #   # shellcheck disable=SC2206
-        #   args+=("--cache-file-lookup-paths" ${inputs.cache-file-lookup-paths-value[@]})
-        # fi
+        if [[ -n "${{ inputs.cache-file-lookup-paths }}" ]]; then
+          IFS='|' cache_file_lookup_paths_value=("${{ inputs.cache-file-lookup-paths }}")
+          # shellcheck disable=SC2206
+          args+=("--cache-file-lookup-paths" ${cache_file_lookup_paths_value[@]})
+        fi
 
         # shellcheck disable=SC2154
         if [[ "${{ inputs.disable-metro-cache }}" == "true" || "${{ inputs.disable-metro-cache }}" == "yes" ]]; then
