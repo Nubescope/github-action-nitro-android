@@ -1,20 +1,100 @@
 name: "Nitro build tool for Android"
 description: "A Gihub Action for building React Native apps with Nitro"
+branding:
+  icon: "zap"
+  color: "gray-dark"
 inputs:
+  # Basic configuration
   root-directory:
-    description: "The directory within your project, in which your code is located. Leave this field empty if your code is not located in a subdirectory"
+    description: The directory within your project, in which your code is located. Leave this field empty if your code is not located in a subdirectory"
     default: "./"
+  android-flavor:
+    description: "The product flavor for Gradle build variant"
+
+  # App Versioning
+  version-name:
+    description: "The version name for the app"
+  version-code:
+    description: "The version code for the app"
+  disable-version-name-from-package-json:
+    description: >
+      Disable automatic version name configuration. By default will get the 'version' field from package.json and set the version name.
+
+      Available Options:
+        - `yes`
+        - `no`
+  disable-version-code-auto-generation:
+    description: >
+      Disable automatic version code generation. By default will generate a timestamp based number and set the version code.
+
+      Available Options:
+        - `yes`
+        - `no`
+
+  # App Signing
+  keystore-url:
+    description: "Keystore url"
+  keystore-password:
+    description: "Keystore password"
+  keystore-key-alias:
+    description: "Keystore alias"
+  keystore-key-password:
+    description: "Keystore key password"
+
+  # Caching
   cache-provider:
-    description: "Cache provider where cache artifacts will be persisted"
+    description: >
+      Cache provider where cache artifacts will be persisted.
+
+      Available Options:
+        - `fs`: File system
+        - `github`: Uses Github cache action
+        - `s3`: Amazon - Simple Storage Service
     default: "github"
+  disable-cache:
+    description: >
+      When setting this option to `yes` build cache optimizations won't be performed.
+
+      Available Options:
+        - `yes`
+        - `no`
+  cache-env-var-lookup-keys:
+    description: >
+      List of env var keys for lookup to determine cache fingerprint.
+
+      A list of `|` separated values with env variable keys to lookup to determine whether the build should be cached or not
+  cache-file-lookup-paths:
+    description: >
+      List of files for lookup to determine cache fingerprint.
+
+      A list of `|` separated value paths (relative to the root of the repo or absolute) to lookup in order to determine whether the build should be cached or not
+  disable-metro-cache:
+    description: "Setting this field to yes will disable the React Native Metro cache feature"
+
+  # Hooks
+  pre-install-command:
+    description: "Run command prior to install project dependencies (e.g. `rm -rf ./some-folder`)"
+
+  pre-build-command:
+    description: "Run command prior to start building the app (e.g. `yarn tsc && yarn test`)"
+
+  post-build-command:
+    description: "Run command once build successfully finished (e.g. `yarn publish`)"
+
+  # Advanced
+  output-directory:
+    description: "The path to the directory where to place all of Nitro's output files"
+  entry-file:
+    description: "The entry file for bundle generation"
+  debug:
+    description: >
+      Enable verbose logs.
+
+      Available Options:
+        - `yes`
+        - `no`
   fail-safe:
     description: "Runing the app in this mode allows you to prevent the build to fail but you can check the status in further steps"
-    default: "false"
-  entry-file:
-    description: "entry file"
-  debug:
-    description: "Enable verbose logs"
-    default: "no"
 outputs:
   nitro-build-status:
     description: "The status of the latest build (success / failure)"
