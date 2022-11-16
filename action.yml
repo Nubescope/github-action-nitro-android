@@ -7,7 +7,7 @@ inputs:
   # Basic configuration
   root-directory:
     description: The directory within your project, in which your code is located. Leave this field empty if your code is not located in a subdirectory"
-    default: "./"
+    default: "."
   flavor:
     description: "The product flavor for Gradle build variant"
 
@@ -254,16 +254,16 @@ runs:
 
         exit_code=$?
 
-        echo "::set-output name=nitro-output-dir::$(envman run bash -c 'echo ${NITRO_OUTPUT_DIR}')"
-        echo "::set-output name=nitro-logs-path::$(envman run bash -c 'echo ${NITRO_LOGS_PATH}')"
-        echo "::set-output name=nitro-deploy-path::$(envman run bash -c 'echo ${NITRO_DEPLOY_PATH}')"
-        echo "::set-output name=nitro-summary-path::$(envman run bash -c 'echo ${NITRO_SUMMARY_PATH}')"
+        echo "nitro-output-dir=${NITRO_OUTPUT_DIR}" >> $GITHUB_OUTPUT
+        echo "nitro-logs-path=${NITRO_LOGS_PATH}" >> $GITHUB_OUTPUT
+        echo "nitro-deploy-path=${NITRO_DEPLOY_PATH}" >> $GITHUB_OUTPUT
+        echo "nitro-summary-path=${NITRO_SUMMARY_PATH}" >> $GITHUB_OUTPUT
 
         if [[ exit_code -ne 0 ]]; then
           echo "⚠️ Nitro has thrown a '${exit_code}' error code while running on fail-safe mode. You can check 'NITRO_BUILD_FAILED' value in further steps."
-          echo "::set-output name=nitro-build-failed::true"
-          echo "::set-output name=nitro-build-status::failed"
+          echo "nitro-build-failed=true" >> $GITHUB_OUTPUT
+          echo "nitro-build-status=failed" >> $GITHUB_OUTPUT
         else
-          echo "::set-output name=nitro-build-failed::false"
-          echo "::set-output name=nitro-build-status::success"
+          echo "nitro-build-failed=false" >> $GITHUB_OUTPUT
+          echo "nitro-build-status=success" >> $GITHUB_OUTPUT
         fi
