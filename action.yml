@@ -254,10 +254,10 @@ runs:
 
         exit_code=$?
 
-        echo "nitro-output-dir=${NITRO_OUTPUT_DIR}" >> $GITHUB_OUTPUT
-        echo "nitro-logs-path=${NITRO_LOGS_PATH}" >> $GITHUB_OUTPUT
-        echo "nitro-deploy-path=${NITRO_DEPLOY_PATH}" >> $GITHUB_OUTPUT
-        echo "nitro-summary-path=${NITRO_SUMMARY_PATH}" >> $GITHUB_OUTPUT
+        echo "nitro-output-dir=$(envman run bash -c 'echo ${NITRO_OUTPUT_DIR}')" >> $GITHUB_OUTPUT
+        echo "nitro-logs-path=$(envman run bash -c 'echo ${NITRO_LOGS_PATH}')" >> $GITHUB_OUTPUT
+        echo "nitro-deploy-path=$(envman run bash -c 'echo ${NITRO_DEPLOY_PATH}')" >> $GITHUB_OUTPUT
+        echo "nitro-summary-path=$(envman run bash -c 'echo ${NITRO_SUMMARY_PATH}')" >> $GITHUB_OUTPUT
 
         if [[ exit_code -ne 0 ]]; then
           echo "⚠️ Nitro has thrown a '${exit_code}' error code while running on fail-safe mode. You can check 'NITRO_BUILD_FAILED' value in further steps."
