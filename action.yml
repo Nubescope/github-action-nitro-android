@@ -8,7 +8,7 @@ inputs:
   root-directory:
     description: The directory within your project, in which your code is located. Leave this field empty if your code is not located in a subdirectory"
     default: "./"
-  android-flavor:
+  flavor:
     description: "The product flavor for Gradle build variant"
 
   # App Versioning
@@ -34,7 +34,7 @@ inputs:
   # Caching
   cache-provider:
     description: "Cache provider where cache artifacts will be persisted. Available Options: (`fs`: File system / `github`: Uses Github cache action / `s3`: Amazon - Simple Storage Service)"
-    default: "github"
+    default: "s3"
   disable-cache:
     description: "When setting this option to `yes` build cache optimizations won't be performed.  Available Options: (`yes` / `no`)"
   cache-env-var-lookup-keys:
@@ -82,19 +82,15 @@ outputs:
 runs:
   using: "composite"
   steps:
-    - uses: android-actions/setup-android@v2
-    - uses: actions/cache@v2
-      if: ${{ inputs.cache-provider == 'github' }}
-      with:
-        path: |
-          ~/.nitro/cache/*
-        key: nitro-cache-${{ hashFiles('~/.nitro/cache/*') }}
-        restore-keys: nitro-cache-
-    - run: |
+    - name: Setup Android environment
+      uses: android-actions/setup-android@v2
+    - name: Install Envman
+      run: |
         curl -fL https://github.com/bitrise-io/envman/releases/download/2.3.3/envman-"$(uname -s)"-"$(uname -m)" > /usr/local/bin/envman
         chmod +x /usr/local/bin/envman
       shell: bash
-    - id: nitro-cli
+    - name: Run Nitro cli
+      id: nitro-cli
       shell: bash
       run: |
         set -e
@@ -138,8 +134,8 @@ runs:
           args+=("--root-directory" "${{ inputs.root-directory }}")
         fi
 
-        if [[ -n "${{ inputs.android-flavor }}" ]]; then
-          args+=("--android-flavor" "${{ inputs.android-flavor }}")
+        if [[ -n "${{ inputs.flavor }}" ]]; then
+          args+=("--flavor" "${{ inputs.flavor }}")
         fi
 
         # --------------
@@ -168,20 +164,20 @@ runs:
         # App Signing
         # -----------
 
-        if [[ -n "${{ inputs.android-keystore-url }}" ]]; then
-          args+=("--android-keystore-url" "${{ inputs.android-keystore-url }}")
+        if [[ -n "${{ inputs.keystore-url }}" ]]; then
+          args+=("--keystore-url" "${{ inputs.keystore-url }}")
         fi
 
-        if [[ -n "${{ inputs.android-keystore-password }}" ]]; then
-          args+=("--android-keystore-password" "${{ inputs.android-keystore-password }}")
+        if [[ -n "${{ inputs.keystore-password }}" ]]; then
+          args+=("--keystore-password" "${{ inputs.keystore-password }}")
         fi
 
-        if [[ -n "${{ inputs.android-keystore-key-alias }}" ]]; then
-          args+=("--android-keystore-key-alias" "${{ inputs.android-keystore-key-alias }}")
+        if [[ -n "${{ inputs.keystore-key-alias }}" ]]; then
+          args+=("--keystore-key-alias" "${{ inputs.keystore-key-alias }}")
         fi
 
-        if [[ -n "${{ inputs.android-keystore-key-password }}" ]]; then
-          args+=("--android-keystore-key-password" "${{ inputs.android-keystore-key-password }}")
+        if [[ -n "${{ inputs.keystore-key-password }}" ]]; then
+          args+=("--keystore-key-password" "${{ inputs.keystore-key-password }}")
         fi
 
         # -------
@@ -189,11 +185,7 @@ runs:
         # -------
 
         if [[ -n "${{ inputs.cache-provider }}" ]]; then
-          if [[ "${{ inputs.cache-provider }}" == "github" ]]; then
-            args+=("--cache-provider" "fs")
-          else
-            args+=("--cache-provider" "${{ inputs.cache-provider }}")
-          fi
+          args+=("--cache-provider" "${{ inputs.cache-provider }}")
         fi
 
         # shellcheck disable=SC2154
@@ -234,9 +226,9 @@ runs:
           args+=("--post-build-command" "${{ inputs.post-build-command }}")
         fi
 
-        # -----
+        # --------
         # Advanced
-        # -----
+        # --------
 
         if [[ -n "${{ inputs.output-directory }}" ]]; then
           args+=("--output-directory" "${{ inputs.output-directory }}")
@@ -246,8 +238,12 @@ runs:
         # Nitro Cli execution
         # -------------------
 
-        BITRISE_STEP_VERSION=1.0.0
-        BIN_FILE="nitro-linux"
+        BITRISE_STEP_VERSION=4.0.1
+
+        MACOS_BIN_FILE="nitro-macos"
+        LINUX_BIN_FILE="nitro-linux"
+
+        BIN_FILE=$([[ "$(uname)" == "Darwin" ]] && echo "${MACOS_BIN_FILE}" || echo "${LINUX_BIN_FILE}")
         BIN_FILE_PATH="${RUNNER_TEMP}/nitro"
 
         # Download cli release
