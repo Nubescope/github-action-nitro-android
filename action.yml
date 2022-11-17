@@ -109,7 +109,6 @@ runs:
         fi
 
         # Obtain vm boot time
-
         ps_command=$([[ "$(uname)" == "Darwin" ]] && echo "ps -eo lstart,command" || echo "ps -eo lstart,cmd")
         date_command=$([[ "$(uname)" == "Darwin" ]] && echo "gdate" || echo "date")
 
@@ -128,7 +127,7 @@ runs:
           args+=("--verbose")
         fi
 
-        args+=("--build-id" "${GITHUB_RUN_ID}")
+        args+=("--build-id" "${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}_${GITHUB_RUN_ATTEMPT}")
         args+=("--repo-path" "${GITHUB_WORKSPACE}")
 
         # -------------------
