@@ -8,10 +8,6 @@ A Gihub Action for building React Native apps with Nitro
 
 ### Environment Variables
 
-| name          | description                                                                                                                             |
-| ------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| NITRO_LICENSE | A secured string containing the license required to run optimized builds. If not provided, invalid or expired it will run in slow mode. |
-
 <!-- action-docs-inputs -->
 ### Inputs
 

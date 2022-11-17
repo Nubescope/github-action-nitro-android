@@ -271,5 +271,3 @@ runs:
           echo "nitro-build-failed=false" >> $GITHUB_OUTPUT
           echo "nitro-build-status=success" >> $GITHUB_OUTPUT
         fi
-
-        echo "NITRO_BOOTED_AT_TIMESTAMP: ${NITRO_BOOTED_AT_TIMESTAMP}"
