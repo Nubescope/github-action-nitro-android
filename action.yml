@@ -93,7 +93,6 @@ runs:
       shell: bash
     - name: Install Homebrew dependencies
       shell: bash
-      if: contains(matrix.os, 'macos')
       run: |
         brew update --preinstall
         env HOMEBREW_NO_AUTO_UPDATE=1 brew install pigz coreutils
