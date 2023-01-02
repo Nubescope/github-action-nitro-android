@@ -33,6 +33,7 @@ A Gihub Action for building React Native apps with Nitro
 | post-build-command | Run command once build successfully finished (e.g. `yarn publish`) | `false` |  |
 | output-directory | The path to the directory where to place all of Nitro's output files | `false` |  |
 | entry-file | The entry file for bundle generation | `false` |  |
+| detox-configuration | Select a device configuration from your defined configurations | `false` |  |
 | debug | Enable verbose logs. Available Options: (`yes` / `no`) | `false` |  |
 | fail-safe | Runing the app in this mode allows you to prevent the build to fail but you can check the status in further steps | `false` |  |
 <!-- action-docs-inputs -->

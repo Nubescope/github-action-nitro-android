@@ -59,6 +59,8 @@ inputs:
     description: "The path to the directory where to place all of Nitro's output files"
   entry-file:
     description: "The entry file for bundle generation"
+  detox-configuration:
+    description: "Select a device configuration from your defined configurations"
   debug:
     description: "Enable verbose logs. Available Options: (`yes` / `no`)"
   fail-safe:
@@ -73,22 +75,37 @@ outputs:
   nitro-logs-path:
     description: "The full path to access the build log"
     value: ${{ steps.nitro-cli.outputs.nitro-logs-path }}
-  nitro-deploy-path:
-    description: "The full path to access the build artifacts"
-    value: ${{ steps.nitro-cli.outputs.nitro-deploy-path }}
   nitro-summary-path:
     description: "The full path to access the build summary report"
     value: ${{ steps.nitro-cli.outputs.nitro-summary-path }}
+  nitro-app-path:
+    description: "The full path to access the Android package (.apk)"
+    value: ${{ steps.nitro-cli.outputs.nitro-app-path }}
+  # deprecated
+  nitro-deploy-path:
+    description: "The full path to access the Android package (.apk)"
+    value: ${{ steps.nitro-cli.outputs.nitro-deploy-path }}
 runs:
   using: "composite"
   steps:
     - name: Setup Android environment
       uses: android-actions/setup-android@v2
+    - name: Setup JAVA SDK
+      uses: actions/setup-java@v3
+      with:
+        distribution: "zulu"
+        java-version: "11"
     - name: Install Envman
+      shell: bash
       run: |
         curl -fL https://github.com/bitrise-io/envman/releases/download/2.3.3/envman-"$(uname -s)"-"$(uname -m)" > /usr/local/bin/envman
         chmod +x /usr/local/bin/envman
+    - name: Install Homebrew dependencies
       shell: bash
+      if: runner.os == 'macOS'
+      run: |
+        brew update --preinstall
+        env HOMEBREW_NO_AUTO_UPDATE=1 brew install pigz coreutils
     - name: Run Nitro cli
       id: nitro-cli
       shell: bash
@@ -238,11 +255,15 @@ runs:
           args+=("--output-directory" "${{ inputs.output-directory }}")
         fi
 
+        if [[ -n "${{ inputs.detox-configuration }}" ]]; then
+          args+=("--detox-configuration" "${{ inputs.detox-configuration }}")
+        fi
+
         # -------------------
         # Nitro Cli execution
         # -------------------
 
-        BITRISE_STEP_VERSION=4.0.1
+        BITRISE_STEP_VERSION=4.4.1
 
         MACOS_BIN_FILE="nitro-macos"
         LINUX_BIN_FILE="nitro-linux"
@@ -260,8 +281,11 @@ runs:
 
         echo "nitro-output-dir=$(envman run bash -c 'echo ${NITRO_OUTPUT_DIR}')" >> $GITHUB_OUTPUT
         echo "nitro-logs-path=$(envman run bash -c 'echo ${NITRO_LOGS_PATH}')" >> $GITHUB_OUTPUT
-        echo "nitro-deploy-path=$(envman run bash -c 'echo ${NITRO_DEPLOY_PATH}')" >> $GITHUB_OUTPUT
         echo "nitro-summary-path=$(envman run bash -c 'echo ${NITRO_SUMMARY_PATH}')" >> $GITHUB_OUTPUT
+        echo "nitro-app-path=$(envman run bash -c 'echo ${NITRO_APP_PATH}')" >> $GITHUB_OUTPUT
+
+        # deprecated
+        echo "nitro-deploy-path=$(envman run bash -c 'echo ${NITRO_DEPLOY_PATH}')" >> $GITHUB_OUTPUT
 
         if [[ exit_code -ne 0 ]]; then
           echo "⚠️ Nitro has thrown a '${exit_code}' error code while running on fail-safe mode. You can check 'NITRO_BUILD_FAILED' value in further steps."
