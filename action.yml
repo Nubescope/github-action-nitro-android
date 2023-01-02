@@ -55,6 +55,8 @@ inputs:
     description: "Run command once build successfully finished (e.g. `yarn publish`)"
 
   # Advanced
+  detox-configuration:
+    description: "Select a device configuration from your defined configurations"
   output-directory:
     description: "The path to the directory where to place all of Nitro's output files"
   entry-file:
@@ -89,6 +91,12 @@ runs:
         curl -fL https://github.com/bitrise-io/envman/releases/download/2.3.3/envman-"$(uname -s)"-"$(uname -m)" > /usr/local/bin/envman
         chmod +x /usr/local/bin/envman
       shell: bash
+    - name: Install Homebrew dependencies
+      shell: bash
+      if: contains(matrix.os, 'macos')
+      run: |
+        brew update --preinstall
+        env HOMEBREW_NO_AUTO_UPDATE=1 brew install pigz coreutils
     - name: Run Nitro cli
       id: nitro-cli
       shell: bash
@@ -133,6 +141,10 @@ runs:
         # -------------------
         # Basic configuration
         # -------------------
+
+        if [[ -n "${{ inputs.detox-configuration }}" ]]; then
+          args+=("--detox-configuration" "${{ inputs.detox-configuration }}")
+        fi
 
         if [[ -n "${{ inputs.root-directory }}" ]]; then
           args+=("--root-directory" "${{ inputs.root-directory }}")
@@ -242,7 +254,7 @@ runs:
         # Nitro Cli execution
         # -------------------
 
-        BITRISE_STEP_VERSION=4.0.1
+        BITRISE_STEP_VERSION=4.4.0-beta.5
 
         MACOS_BIN_FILE="nitro-macos"
         LINUX_BIN_FILE="nitro-linux"
