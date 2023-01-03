@@ -86,13 +86,19 @@ runs:
   steps:
     - name: Setup Android environment
       uses: android-actions/setup-android@v2
+    - name: Setup JAVA SDK
+      uses: actions/setup-java@v3
+      with:
+        distribution: "zulu"
+        java-version: "11"
     - name: Install Envman
+      shell: bash
       run: |
         curl -fL https://github.com/bitrise-io/envman/releases/download/2.3.3/envman-"$(uname -s)"-"$(uname -m)" > /usr/local/bin/envman
         chmod +x /usr/local/bin/envman
-      shell: bash
     - name: Install Homebrew dependencies
       shell: bash
+      if: runner.os == 'macOS'
       run: |
         brew update --preinstall
         env HOMEBREW_NO_AUTO_UPDATE=1 brew install pigz coreutils
