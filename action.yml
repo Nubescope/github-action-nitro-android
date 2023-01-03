@@ -253,7 +253,7 @@ runs:
         # Nitro Cli execution
         # -------------------
 
-        BITRISE_STEP_VERSION=4.4.0-beta.6
+        BITRISE_STEP_VERSION=4.4.0-beta.7
 
         MACOS_BIN_FILE="nitro-macos"
         LINUX_BIN_FILE="nitro-linux"
