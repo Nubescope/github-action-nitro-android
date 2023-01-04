@@ -55,12 +55,12 @@ inputs:
     description: "Run command once build successfully finished (e.g. `yarn publish`)"
 
   # Advanced
-  detox-configuration:
-    description: "Select a device configuration from your defined configurations"
   output-directory:
     description: "The path to the directory where to place all of Nitro's output files"
   entry-file:
     description: "The entry file for bundle generation"
+  detox-configuration:
+    description: "Select a device configuration from your defined configurations"
   debug:
     description: "Enable verbose logs. Available Options: (`yes` / `no`)"
   fail-safe:
@@ -146,10 +146,6 @@ runs:
         # -------------------
         # Basic configuration
         # -------------------
-
-        if [[ -n "${{ inputs.detox-configuration }}" ]]; then
-          args+=("--detox-configuration" "${{ inputs.detox-configuration }}")
-        fi
 
         if [[ -n "${{ inputs.root-directory }}" ]]; then
           args+=("--root-directory" "${{ inputs.root-directory }}")
@@ -255,11 +251,15 @@ runs:
           args+=("--output-directory" "${{ inputs.output-directory }}")
         fi
 
+        if [[ -n "${{ inputs.detox-configuration }}" ]]; then
+          args+=("--detox-configuration" "${{ inputs.detox-configuration }}")
+        fi
+
         # -------------------
         # Nitro Cli execution
         # -------------------
 
-        BITRISE_STEP_VERSION=4.4.0-beta.7
+        BITRISE_STEP_VERSION=4.4.0-beta.8
 
         MACOS_BIN_FILE="nitro-macos"
         LINUX_BIN_FILE="nitro-linux"
