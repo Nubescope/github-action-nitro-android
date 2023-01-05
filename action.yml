@@ -259,7 +259,7 @@ runs:
         # Nitro Cli execution
         # -------------------
 
-        BITRISE_STEP_VERSION=4.4.0-beta.8
+        BITRISE_STEP_VERSION=4.4.0-beta.9
 
         MACOS_BIN_FILE="nitro-macos"
         LINUX_BIN_FILE="nitro-linux"
@@ -277,8 +277,12 @@ runs:
 
         echo "nitro-output-dir=$(envman run bash -c 'echo ${NITRO_OUTPUT_DIR}')" >> $GITHUB_OUTPUT
         echo "nitro-logs-path=$(envman run bash -c 'echo ${NITRO_LOGS_PATH}')" >> $GITHUB_OUTPUT
-        echo "nitro-deploy-path=$(envman run bash -c 'echo ${NITRO_DEPLOY_PATH}')" >> $GITHUB_OUTPUT
         echo "nitro-summary-path=$(envman run bash -c 'echo ${NITRO_SUMMARY_PATH}')" >> $GITHUB_OUTPUT
+        echo "nitro-app-path=$(envman run bash -c 'echo ${NITRO_APP_PATH}')" >> $GITHUB_OUTPUT
+
+        # deprecated
+        echo "nitro-deploy-path=$(envman run bash -c 'echo ${NITRO_DEPLOY_PATH}')" >> $GITHUB_OUTPUT
+
 
         if [[ exit_code -ne 0 ]]; then
           echo "⚠️ Nitro has thrown a '${exit_code}' error code while running on fail-safe mode. You can check 'NITRO_BUILD_FAILED' value in further steps."
