@@ -75,12 +75,16 @@ outputs:
   nitro-logs-path:
     description: "The full path to access the build log"
     value: ${{ steps.nitro-cli.outputs.nitro-logs-path }}
-  nitro-deploy-path:
-    description: "The full path to access the build artifacts"
-    value: ${{ steps.nitro-cli.outputs.nitro-deploy-path }}
   nitro-summary-path:
     description: "The full path to access the build summary report"
     value: ${{ steps.nitro-cli.outputs.nitro-summary-path }}
+  nitro-app-path:
+    description: "The full path to access the Android package (.apk)"
+    value: ${{ steps.nitro-cli.outputs.nitro-app-path }}
+  # deprecated
+  nitro-deploy-path:
+    description: "The full path to access the Android package (.apk)"
+    value: ${{ steps.nitro-cli.outputs.nitro-deploy-path }}
 runs:
   using: "composite"
   steps:
@@ -282,7 +286,6 @@ runs:
 
         # deprecated
         echo "nitro-deploy-path=$(envman run bash -c 'echo ${NITRO_DEPLOY_PATH}')" >> $GITHUB_OUTPUT
-
 
         if [[ exit_code -ne 0 ]]; then
           echo "⚠️ Nitro has thrown a '${exit_code}' error code while running on fail-safe mode. You can check 'NITRO_BUILD_FAILED' value in further steps."
