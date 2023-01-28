@@ -81,10 +81,6 @@ outputs:
   nitro-app-path:
     description: "The full path to access the Android package (.apk)"
     value: ${{ steps.nitro-cli.outputs.nitro-app-path }}
-  # deprecated
-  nitro-deploy-path:
-    description: "The full path to access the Android package (.apk)"
-    value: ${{ steps.nitro-cli.outputs.nitro-deploy-path }}
 runs:
   using: "composite"
   steps:
@@ -95,26 +91,20 @@ runs:
       with:
         distribution: "zulu"
         java-version: "11"
-    - name: Install Envman
-      shell: bash
-      run: |
-        curl -fL https://github.com/bitrise-io/envman/releases/download/2.3.3/envman-"$(uname -s)"-"$(uname -m)" > /usr/local/bin/envman
-        chmod +x /usr/local/bin/envman
     - name: Install Homebrew dependencies
       shell: bash
       if: runner.os == 'macOS'
       run: |
         brew update --preinstall
-        env HOMEBREW_NO_AUTO_UPDATE=1 brew install pigz coreutils
-    - name: Run Nitro cli
+        env HOMEBREW_NO_AUTO_UPDATE=1 brew install pigz coreutils jq
+    - name: Run Nitro CLI
       id: nitro-cli
       shell: bash
       run: |
-        set -e
+        #!/bin/bash
 
-        if [[ "${{ inputs.fail-safe }}" == "true" || "${{ inputs.fail-safe }}" == "yes" ]]; then
-          set +e
-        fi
+        # Do not exit on errors. If "safe mode" is not enabled it will exit properly at the end.
+        set +e
 
         # shellcheck disable=SC2154
         if [[ "${{ inputs.debug }}" == "true" || "${{ inputs.debug }}" == "yes" ]]; then
@@ -137,6 +127,7 @@ runs:
 
         # Build command arguments
         args=("android")
+        args+=("--output-format" "json")
         args+=("--tracking-provider" "nitro-on-premise")
 
         # shellcheck disable=SC2154
@@ -263,13 +254,14 @@ runs:
         # Nitro Cli execution
         # -------------------
 
-        BITRISE_STEP_VERSION=4.4.1
+        BITRISE_STEP_VERSION=4.5.0
 
         MACOS_BIN_FILE="nitro-macos"
         LINUX_BIN_FILE="nitro-linux"
 
         BIN_FILE=$([[ "$(uname)" == "Darwin" ]] && echo "${MACOS_BIN_FILE}" || echo "${LINUX_BIN_FILE}")
         BIN_FILE_PATH="${RUNNER_TEMP}/nitro"
+        NITRO_OUTPUT_JSON_PATH="$(pwd)/nitro-output.json"
 
         # Download cli release
         wget -q "https://github.com/nitro-build/bitrise-step-nitro-android/releases/download/${BITRISE_STEP_VERSION}/${BIN_FILE}" -O "${BIN_FILE_PATH}"
@@ -279,19 +271,31 @@ runs:
 
         exit_code=$?
 
-        echo "nitro-output-dir=$(envman run bash -c 'echo ${NITRO_OUTPUT_DIR}')" >> $GITHUB_OUTPUT
-        echo "nitro-logs-path=$(envman run bash -c 'echo ${NITRO_LOGS_PATH}')" >> $GITHUB_OUTPUT
-        echo "nitro-summary-path=$(envman run bash -c 'echo ${NITRO_SUMMARY_PATH}')" >> $GITHUB_OUTPUT
-        echo "nitro-app-path=$(envman run bash -c 'echo ${NITRO_APP_PATH}')" >> $GITHUB_OUTPUT
-
-        # deprecated
-        echo "nitro-deploy-path=$(envman run bash -c 'echo ${NITRO_DEPLOY_PATH}')" >> $GITHUB_OUTPUT
-
+        # Set environment variables using envman
         if [[ exit_code -ne 0 ]]; then
-          echo "⚠️ Nitro has thrown a '${exit_code}' error code while running on fail-safe mode. You can check 'NITRO_BUILD_FAILED' value in further steps."
-          echo "nitro-build-failed=true" >> $GITHUB_OUTPUT
           echo "nitro-build-status=failed" >> $GITHUB_OUTPUT
         else
-          echo "nitro-build-failed=false" >> $GITHUB_OUTPUT
           echo "nitro-build-status=success" >> $GITHUB_OUTPUT
+        fi
+
+        if [ -f "${NITRO_OUTPUT_JSON_PATH}" ]; then
+          output=$(cat < "${NITRO_OUTPUT_JSON_PATH}")
+
+          echo "${output}" | jq -r '.appPath' | xargs -I{} echo "nitro-app-path={}" >> $GITHUB_OUTPUT
+          echo "${output}" | jq -r '.outputDir' | xargs -I{} echo "nitro-output-dir={}" >> $GITHUB_OUTPUT
+          echo "${output}" | jq -r '.summaryPath' | xargs -I{} echo "nitro-summary-path={}" >> $GITHUB_OUTPUT
+          echo "${output}" | jq -r '.logsPath' | xargs -I{} echo "nitro-logs-path={}" >> $GITHUB_OUTPUT
+        else
+          echo "File not found: ${NITRO_OUTPUT_JSON_PATH}"
+        fi
+
+        # shellcheck disable=SC2154
+        if [[ "${{ inputs.fail-safe }}" == "true" || "${{ inputs.fail-safe }}" == "yes" ]]; then
+          if [[ exit_code -ne 0 ]]; then
+            echo "⚠️ Nitro has thrown a '${exit_code}' error code while running on fail-safe mode. You can check 'nitro-build-status' output value in further steps."
+          fi  
+        else
+          # If not running in "safe mode" exit with captured exit_code
+          set -e
+          exit $exit_code
         fi

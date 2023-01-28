@@ -1,12 +1,12 @@
-# github-action-nitro-android
+# GitHub Action - Nitro Runner for Android
+
+A GitHub Action for running React Native builds for **Android** using [Nitro](https://nitro.build).
 
 <!-- action-docs-description -->
 ### Description
 
 A Gihub Action for building React Native apps with Nitro
 <!-- action-docs-description -->
-
-### Environment Variables
 
 <!-- action-docs-inputs -->
 ### Inputs
@@ -46,8 +46,8 @@ A Gihub Action for building React Native apps with Nitro
 | nitro-build-status | The status of the latest build (success / failure) |
 | nitro-output-dir | The path to the directory where to place all of Nitro's output files |
 | nitro-logs-path | The full path to access the build log |
-| nitro-deploy-path | The full path to access the build artifacts |
 | nitro-summary-path | The full path to access the build summary report |
+| nitro-app-path | The full path to access the Android package (.apk) |
 <!-- action-docs-outputs -->
 
 <!-- action-docs-runs -->
