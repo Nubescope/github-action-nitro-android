@@ -115,27 +115,15 @@ runs:
           export ENTRY_FILE="${{ inputs.entry-file }}"
         fi
 
-        # Obtain vm boot time
-        ps_command=$([[ "$(uname)" == "Darwin" ]] && echo "ps -eo lstart,command" || echo "ps -eo lstart,cmd")
-        date_command=$([[ "$(uname)" == "Darwin" ]] && echo "gdate" || echo "date")
-
-        bitrise_process_started_at=$(${ps_command} | grep "Runner.Listener run" | grep -v grep | sed -e 's/^\(.\{24\}\).*/\1/' | head -1)
-        bitrise_process_started_at_ms=$(${date_command} -d "${bitrise_process_started_at:=$(date)}" "+%s%3N")
-
-        # Set environment variables
-        export NITRO_BOOTED_AT_TIMESTAMP="${bitrise_process_started_at_ms}"
-
         # Build command arguments
         args=("android")
         args+=("--output-format" "json")
-        args+=("--tracking-provider" "nitro-on-premise")
 
         # shellcheck disable=SC2154
         if [[ "${{ inputs.debug }}" == "true" || "${{ inputs.debug }}" == "yes" ]]; then
           args+=("--verbose")
         fi
 
-        args+=("--build-id" "${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}_${GITHUB_RUN_ATTEMPT}")
         args+=("--repo-path" "${GITHUB_WORKSPACE}")
 
         # -------------------
@@ -254,21 +242,8 @@ runs:
         # Nitro Cli execution
         # -------------------
 
-        BITRISE_STEP_VERSION=4.5.0
-
-        MACOS_BIN_FILE="nitro-macos"
-        LINUX_BIN_FILE="nitro-linux"
-
-        BIN_FILE=$([[ "$(uname)" == "Darwin" ]] && echo "${MACOS_BIN_FILE}" || echo "${LINUX_BIN_FILE}")
-        BIN_FILE_PATH="${RUNNER_TEMP}/nitro"
         NITRO_OUTPUT_JSON_PATH="$(pwd)/nitro-output.json"
-
-        # Download cli release
-        wget -q "https://github.com/nitro-build/bitrise-step-nitro-android/releases/download/${BITRISE_STEP_VERSION}/${BIN_FILE}" -O "${BIN_FILE_PATH}"
-        chmod +x "${BIN_FILE_PATH}"
-
-        ${BIN_FILE_PATH} "${args[@]}"
-
+        npx @nitro-build/cli@^0.11.0 "${args[@]}"
         exit_code=$?
 
         # Set environment variables using envman
